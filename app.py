@@ -1,8 +1,8 @@
 import os
 import csv
+import random
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import sqlite3
-from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = 'naati_secret_key_simple'
@@ -10,7 +10,6 @@ DB_NAME = "naati_vocab.db"
 CSV_FILE = "NAATI_Vocabulary_Master_List.csv"
 
 
-# --- Database Helper Functions ---
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
@@ -18,11 +17,9 @@ def get_db_connection():
 
 
 def init_db():
-    """Initialize DB and load CSV data if table is empty"""
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Create Tables
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             username TEXT PRIMARY KEY,
@@ -43,7 +40,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS progress (
             username TEXT,
             vocab_id TEXT,
-            status TEXT, -- 'known', 'unknown'
+            status TEXT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (username, vocab_id),
             FOREIGN KEY (username) REFERENCES users(username),
@@ -51,7 +48,6 @@ def init_db():
         )
     ''')
 
-    # Check if vocab exists, if not load from CSV
     cursor.execute('SELECT count(*) FROM vocabulary')
     if cursor.fetchone()[0] == 0:
         print("Initializing Database with CSV data...")
@@ -60,25 +56,18 @@ def init_db():
                 reader = csv.DictReader(f)
                 to_db = []
                 for row in reader:
-                    # CSV headers: ID, English, Nepali (Romanized), Nepali (Devanagari)
                     to_db.append((
                         row['ID'],
                         row['English'],
                         row['Nepali (Romanized)'],
                         row['Nepali (Devanagari)']
                     ))
-
                 cursor.executemany("INSERT INTO vocabulary (id, english, nepali_roman, nepali_dev) VALUES (?, ?, ?, ?)",
                                    to_db)
                 print(f"Imported {len(to_db)} words.")
-        else:
-            print("WARNING: CSV file not found. Database is empty.")
-
     conn.commit()
     conn.close()
 
-
-# --- Routes ---
 
 @app.route('/')
 def index():
@@ -113,8 +102,6 @@ def flashcards():
     return render_template('index.html', user=session['username'])
 
 
-# --- API Endpoints ---
-
 @app.route('/api/get_card')
 def get_card():
     if 'username' not in session:
@@ -123,38 +110,38 @@ def get_card():
     username = session['username']
     conn = get_db_connection()
 
-    # Logic: Get a card that is NOT marked as 'known' by this user
-    # Priority: Words never seen -> Words marked unknown
-
-    # Try to find a new word first
-    query = '''
+    # 1. Try to get a brand new word
+    query_new = '''
         SELECT * FROM vocabulary 
         WHERE id NOT IN (SELECT vocab_id FROM progress WHERE username = ?)
         ORDER BY RANDOM() LIMIT 1
     '''
-    card = conn.execute(query, (username,)).fetchone()
+    card = conn.execute(query_new, (username,)).fetchone()
 
-    # If no new words, get words marked as 'unknown' (review)
+    # 2. If no new words, get words marked as 'unknown' (review)
     if not card:
-        query = '''
+        query_review = '''
             SELECT v.* FROM vocabulary v
             JOIN progress p ON v.id = p.vocab_id
             WHERE p.username = ? AND p.status = 'unknown'
             ORDER BY RANDOM() LIMIT 1
         '''
-        card = conn.execute(query, (username,)).fetchone()
-
-    # If still no card, they know everything!
-    if not card:
-        conn.close()
-        return jsonify({'finished': True})
+        card = conn.execute(query_review, (username,)).fetchone()
 
     conn.close()
+
+    if not card:
+        return jsonify({'finished': True})
+
+    # Randomly decide direction: 'en_to_ne' or 'ne_to_en'
+    direction = random.choice(['en_to_ne', 'ne_to_en'])
+
     return jsonify({
         'id': card['id'],
         'english': card['english'],
         'nepali_roman': card['nepali_roman'],
-        'nepali_dev': card['nepali_dev']
+        'nepali_dev': card['nepali_dev'],
+        'direction': direction
     })
 
 
@@ -166,7 +153,7 @@ def mark_card():
     data = request.json
     username = session['username']
     vocab_id = data.get('vocab_id')
-    status = data.get('status')  # 'known' or 'unknown'
+    status = data.get('status')
 
     conn = get_db_connection()
     conn.execute('''
@@ -202,5 +189,4 @@ def get_stats():
 
 if __name__ == '__main__':
     init_db()
-    # Run on 0.0.0.0 to make it accessible to other devices on the network
     app.run(debug=True, host='0.0.0.0', port=8000)

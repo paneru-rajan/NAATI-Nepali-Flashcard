@@ -16,13 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-known').addEventListener('click', () => handleChoice('known'));
     document.getElementById('btn-unknown').addEventListener('click', () => handleChoice('unknown'));
     
-    // Card tap to flip
     cardElement.addEventListener('click', (e) => {
-        // Don't flip if dragging
         if (!isDragging) flipCard();
     });
 
-    // Keyboard Shortcuts
     document.addEventListener('keydown', (e) => {
         if (isFinished) return;
         if (e.code === 'Space') flipCard();
@@ -39,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cardElement.addEventListener('mousedown', dragStart);
 
     cardElement.addEventListener('touchmove', dragMove);
-    document.addEventListener('mousemove', dragMove); // Document to catch drag outside card
+    document.addEventListener('mousemove', dragMove);
 
     cardElement.addEventListener('touchend', dragEnd);
     document.addEventListener('mouseup', dragEnd);
@@ -48,26 +45,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isFinished) return;
         startX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
         isDragging = true;
-        cardElement.style.transition = 'none'; // Disable transition for direct follow
+        cardElement.style.transition = 'none';
     }
 
     function dragMove(e) {
         if (!isDragging) return;
-        e.preventDefault(); // Prevent scrolling
+        e.preventDefault(); 
 
         currentX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
         const deltaX = currentX - startX;
-        
-        // Rotate slightly while dragging
         const rotate = deltaX * 0.1;
-        
-        // Keep flipped state if it was flipped
         const isFlipped = cardElement.classList.contains('is-flipped');
         const flipRotate = isFlipped ? 'rotateY(180deg)' : '';
         
         cardElement.style.transform = `translateX(${deltaX}px) rotate(${rotate}deg) ${flipRotate}`;
 
-        // Show overlays opacity based on drag distance
         const opacity = Math.min(Math.abs(deltaX) / 100, 1);
         if (deltaX > 0) {
             overlayKnown.style.opacity = opacity;
@@ -83,20 +75,17 @@ document.addEventListener('DOMContentLoaded', () => {
         isDragging = false;
         
         const deltaX = currentX - startX;
-        const threshold = 100; // Pixels to trigger swipe
+        const threshold = 100;
 
-        cardElement.style.transition = 'transform 0.4s ease'; // Re-enable transition
+        cardElement.style.transition = 'transform 0.4s ease';
 
         if (deltaX > threshold) {
-            // Swiped Right
             animateOut(500);
             setTimeout(() => handleChoice('known', true), 200);
         } else if (deltaX < -threshold) {
-            // Swiped Left
             animateOut(-500);
             setTimeout(() => handleChoice('unknown', true), 200);
         } else {
-            // Reset position
             resetCardVisuals();
         }
     }
@@ -123,13 +112,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleChoice(status, skipAnimation = false) {
         if (isFinished || !currentCardData) return;
 
-        // If triggered by button/keyboard, do a small animation
         if (!skipAnimation) {
             const moveX = status === 'known' ? 500 : -500;
             animateOut(moveX);
         }
 
-        // Send to backend
         fetch('/api/mark_card', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -139,15 +126,11 @@ document.addEventListener('DOMContentLoaded', () => {
             })
         });
 
-        // Load next
         setTimeout(() => {
             cardElement.style.transition = 'none';
             cardElement.classList.remove('is-flipped');
             cardElement.style.transform = 'translate(0px, 0px)';
-            
-            // Force reflow
             void cardElement.offsetWidth;
-            
             cardElement.style.transition = 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)';
             
             fetchNextCard();
@@ -169,9 +152,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderCard(data) {
-        document.getElementById('word-english').textContent = data.english;
-        document.getElementById('word-nepali-roman').textContent = data.nepali_roman;
-        document.getElementById('word-nepali-dev').textContent = data.nepali_dev;
+        const frontLabel = document.getElementById('front-label');
+        const frontMain = document.getElementById('front-main');
+        const frontSub = document.getElementById('front-sub');
+        
+        const backLabel = document.getElementById('back-label');
+        const backMain = document.getElementById('back-main');
+        const backSub = document.getElementById('back-sub');
+
+        // Logic for Bidirectional Cards
+        if (data.direction === 'en_to_ne') {
+            // Forward: English Front -> Nepali Back
+            frontLabel.textContent = 'English';
+            frontMain.textContent = data.english;
+            frontSub.textContent = ''; // Empty sub for English
+
+            backLabel.textContent = 'Nepali';
+            backMain.textContent = data.nepali_roman;
+            backSub.textContent = data.nepali_dev;
+        } else {
+            // Reverse: Nepali Front -> English Back
+            frontLabel.textContent = 'Nepali';
+            frontMain.textContent = data.nepali_roman;
+            frontSub.textContent = data.nepali_dev;
+
+            backLabel.textContent = 'English';
+            backMain.textContent = data.english;
+            backSub.textContent = ''; // Empty sub for English
+        }
+
         document.getElementById('word-id').textContent = `Topic: ${data.id}`;
     }
 
@@ -182,7 +191,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const total = data.total;
                 const mastered = data.known;
                 const percent = total === 0 ? 0 : Math.round((mastered / total) * 100);
-                
                 document.getElementById('progress-text').textContent = 
                     `${mastered} Mastered / ${data.unknown} To Review`;
                 document.getElementById('progress-bar').style.width = `${percent}%`;

@@ -1,7 +1,8 @@
 # Prep NAATI - Nepali Vocabulary Flashcards
 
-A lightweight, mobile-responsive web application to practice **NAATI CCL Nepali** vocabulary. It features a swipe-based
-interface (Tinder-style) to track progress between "Known" and "Unknown" words, stored in a local SQLite database.
+A lightweight, mobile-responsive web application to practice **NAATI CCL Nepali** vocabulary/dialogues. It features a
+swipe-based interface (Tinder-style) to track progress between "Known" and "Unknown" words/Sentences, stored in a local
+SQLite database.
 
 ## Prerequisites
 
@@ -45,7 +46,7 @@ uv run python app.py
 ### 💻 On Local Machine (Laptop)
 
 Open your browser and navigate to:
-**https://www.google.com/search?q=http://127.0.0.1:5000**
+**https://www.google.com/search?q=http://127.0.0.1:8000**
 
 * **Login:** Enter any username (no password required).
 * **Controls:**
@@ -60,7 +61,7 @@ Open your browser and navigate to:
     * **Windows:** `ipconfig` (Look for IPv4 Address)
     * **Mac/Linux:** `ipconfig getifaddr en0` or `hostname -I`
 
-2. On your phone, visit: `http://YOUR_COMPUTER_IP:5000`
+2. On your phone, visit: `http://YOUR_COMPUTER_IP:8000`
 
 3. **Controls:** Swipe Left (Unknown) or Swipe Right (Known).
 
@@ -74,7 +75,7 @@ Open your browser and navigate to:
 
 ## Troubleshooting
 
-* **Port Issues:** If port 5000 is busy, edit the bottom of `app.py` to change `port=5000` to `port=8000` or another
+* **Port Issues:** If port 8000 is busy, edit the bottom of `app.py` to change `port=8000` to `port=8001` or another
   available port.
 * **Mobile Connection Refused:** Ensure your computer's firewall allows connections to Python/Flask, and that both
   devices are on the same WiFi network.

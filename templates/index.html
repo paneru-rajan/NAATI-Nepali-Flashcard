@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NAATI Flashcards</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <!-- Prevent pulling to refresh on mobile -->
     <style>
         body { overscroll-behavior-y: contain; }
     </style>
@@ -28,19 +27,19 @@
             <!-- The Card -->
             <div id="card" class="card">
                 <div class="card-face card-front">
-                    <span class="card-label">English</span>
-                    <h2 id="word-english">Loading...</h2>
+                    <span class="card-label" id="front-label">Loading...</span>
+                    <h2 id="front-main"></h2>
+                    <h3 id="front-sub"></h3> <!-- Used if Nepali is on front -->
                     <div class="hint">Tap to flip</div>
                 </div>
                 <div class="card-face card-back">
-                    <span class="card-label">Nepali</span>
-                    <h2 id="word-nepali-roman">...</h2>
-                    <h3 id="word-nepali-dev">...</h3>
+                    <span class="card-label" id="back-label">...</span>
+                    <h2 id="back-main"></h2>
+                    <h3 id="back-sub"></h3> <!-- Used if Nepali is on back -->
                     <div class="topic-tag" id="word-id">Topic</div>
                 </div>
             </div>
             
-            <!-- Overlay indicators for swiping -->
             <div class="overlay overlay-known">KNOW IT</div>
             <div class="overlay overlay-unknown">REVIEW</div>
         </div>
