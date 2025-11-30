@@ -12,17 +12,27 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStats();
 
     // --- Inputs & Controls ---
-    document.getElementById('btn-flip').addEventListener('click', flipCard);
+    const btnFlip = document.getElementById('btn-flip');
+    if (btnFlip) {
+        btnFlip.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent any parent handlers
+            flipCard();
+            // Remove focus so spacebar doesn't trigger it again
+            btnFlip.blur(); 
+        });
+    }
+    
     document.getElementById('btn-known').addEventListener('click', () => handleChoice('known'));
     document.getElementById('btn-unknown').addEventListener('click', () => handleChoice('unknown'));
     
-    cardElement.addEventListener('click', (e) => {
-        if (!isDragging) flipCard();
-    });
+    // Removed duplicate listener that was here
 
     document.addEventListener('keydown', (e) => {
         if (isFinished) return;
-        if (e.code === 'Space') flipCard();
+        if (e.code === 'Space') {
+            e.preventDefault(); // Prevent scrolling
+            flipCard();
+        }
         if (e.code === 'ArrowRight') handleChoice('known');
         if (e.code === 'ArrowLeft') handleChoice('unknown');
     });

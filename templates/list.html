@@ -23,6 +23,11 @@
         .status-known { background: #e6ffea; color: #00b894; }
         .status-unknown { background: #ffeaea; color: #d63031; }
         .status-new { background: #f1f2f6; color: #747d8c; }
+        
+        .action-btn {
+            background: none; border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; cursor: pointer; color: #555; font-size: 0.8rem;
+        }
+        .action-btn:hover { background: #eee; color: #333; }
 
         @media (max-width: 600px) {
             th, td { font-size: 0.9rem; padding: 8px; }
@@ -51,11 +56,12 @@
                     <th>English</th>
                     <th>Nepali</th>
                     <th>Status</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
                 {% for word in words %}
-                <tr class="vocab-row" data-status="status-{{ word.status|lower }}">
+                <tr class="vocab-row" data-status="status-{{ word.status|lower }}" id="row-{{ word.id }}">
                     <td>{{ word.id }}</td>
                     <td>{{ word.english }}</td>
                     <td>
@@ -63,9 +69,14 @@
                         <div style="font-size: 0.8em; color: #777;">{{ word.nepali_roman }}</div>
                     </td>
                     <td>
-                        <span class="status-badge status-{{ word.status|lower }}">
+                        <span class="status-badge status-{{ word.status|lower }}" id="badge-{{ word.id }}">
                             {{ word.status }}
                         </span>
+                    </td>
+                    <td>
+                        {% if word.status|lower == 'known' %}
+                        <button class="action-btn" onclick="resetCard('{{ word.id }}')">↺ Review</button>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -74,6 +85,7 @@
     </div>
 
     <script>
+        // Filter Logic
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 // Update active button
@@ -92,6 +104,41 @@
                 });
             });
         });
+
+        // Reset Logic
+        function resetCard(vocabId) {
+            // Removed confirmation dialog
+            fetch('/api/reset_card', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vocab_id: vocabId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI immediately
+                    const row = document.getElementById(`row-${vocabId}`);
+                    const badge = document.getElementById(`badge-${vocabId}`);
+                    const btn = row.querySelector('.action-btn');
+
+                    // Update Data Attribute for filtering
+                    row.setAttribute('data-status', 'status-unknown');
+                    
+                    // Update Badge
+                    badge.className = 'status-badge status-unknown';
+                    badge.textContent = 'unknown'; // or 'Review' if you prefer standardizing
+
+                    // Remove button since it's now in review
+                    if(btn) btn.remove();
+                    
+                    // If current filter hides review, hide the row
+                    const activeFilter = document.querySelector('.filter-btn.active').getAttribute('data-filter');
+                    if (activeFilter !== 'all' && activeFilter !== 'status-unknown') {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>

@@ -134,16 +134,24 @@ def get_card():
     username = session['username']
     conn = get_db_connection()
 
-    # 1. Try to get a brand new word
-    query_new = '''
-        SELECT * FROM vocabulary 
+    # Check availability of 'new' and 'review' words
+    count_new = conn.execute('''
+        SELECT COUNT(*) FROM vocabulary 
         WHERE id NOT IN (SELECT vocab_id FROM progress WHERE username = ?)
-        ORDER BY RANDOM() LIMIT 1
-    '''
-    card = conn.execute(query_new, (username,)).fetchone()
+    ''', (username,)).fetchone()[0]
 
-    # 2. If no new words, get words marked as 'unknown' (review)
-    if not card:
+    count_review = conn.execute('''
+        SELECT COUNT(*) FROM progress 
+        WHERE username = ? AND status = 'unknown'
+    ''', (username,)).fetchone()[0]
+
+    card = None
+    
+    # Strategy: Mix Review (30%) and New (70%)
+    want_review = (random.random() < 0.3)
+    
+    # Prioritize review if that's what we want and we have them, OR if we have no new words
+    if (want_review and count_review > 0) or (count_new == 0 and count_review > 0):
         query_review = '''
             SELECT v.* FROM vocabulary v
             JOIN progress p ON v.id = p.vocab_id
@@ -151,6 +159,25 @@ def get_card():
             ORDER BY RANDOM() LIMIT 1
         '''
         card = conn.execute(query_review, (username,)).fetchone()
+    
+    # Otherwise get new word if available
+    if not card and count_new > 0:
+        query_new = '''
+            SELECT * FROM vocabulary 
+            WHERE id NOT IN (SELECT vocab_id FROM progress WHERE username = ?)
+            ORDER BY RANDOM() LIMIT 1
+        '''
+        card = conn.execute(query_new, (username,)).fetchone()
+        
+    # Fallback: If we wanted new but none left, try review again
+    if not card and count_review > 0:
+         query_review = '''
+            SELECT v.* FROM vocabulary v
+            JOIN progress p ON v.id = p.vocab_id
+            WHERE p.username = ? AND p.status = 'unknown'
+            ORDER BY RANDOM() LIMIT 1
+        '''
+         card = conn.execute(query_review, (username,)).fetchone()
 
     conn.close()
 
@@ -167,6 +194,30 @@ def get_card():
         'nepali_dev': card['nepali_dev'],
         'direction': direction
     })
+
+
+@app.route('/api/reset_card', methods=['POST'])
+def reset_card():
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.json
+    username = session['username']
+    vocab_id = data.get('vocab_id')
+
+    conn = get_db_connection()
+    # Set status to 'unknown' so it goes back to the Review queue
+    conn.execute('''
+        INSERT INTO progress (username, vocab_id, status, updated_at) 
+        VALUES (?, ?, 'unknown', CURRENT_TIMESTAMP)
+        ON CONFLICT(username, vocab_id) DO UPDATE SET 
+        status='unknown', 
+        updated_at=CURRENT_TIMESTAMP
+    ''', (username, vocab_id))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True})
 
 
 @app.route('/api/mark_card', methods=['POST'])
