@@ -203,4 +203,4 @@ def get_stats():
 if __name__ == '__main__':
     init_db()
     # Run on 0.0.0.0 to make it accessible to other devices on the network
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=8000)

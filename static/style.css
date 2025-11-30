@@ -1,0 +1,192 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f8f9fa;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Prevent scrolling */
+}
+
+.header {
+    padding: 10px 20px;
+    background: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    z-index: 10;
+}
+
+.logout-btn {
+    text-decoration: none;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.progress-bar-container {
+    height: 4px;
+    background: #e9ecef;
+    width: 100%;
+}
+
+.progress-bar {
+    height: 100%;
+    background: #28a745;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.app-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+}
+
+/* Card Stack */
+.card-stack {
+    position: relative;
+    width: 100%;
+    max-width: 350px;
+    height: 400px;
+    perspective: 1000px;
+}
+
+.card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    cursor: pointer;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.card.is-flipped {
+    transform: rotateY(180deg);
+}
+
+/* While dragging, disable transition for instant follow */
+.card.is-dragging {
+    transition: none;
+}
+
+.card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
+    border-radius: 20px;
+    background: white;
+    user-select: none;
+}
+
+.card-back {
+    transform: rotateY(180deg);
+    background: #fdfdfd;
+}
+
+.card-label {
+    position: absolute;
+    top: 20px;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    color: #999;
+    letter-spacing: 1px;
+}
+
+#word-english { font-size: 2rem; color: #2c3e50; }
+#word-nepali-roman { font-size: 1.8rem; color: #2c3e50; margin-bottom: 5px; }
+#word-nepali-dev { font-size: 1.8rem; color: #555; font-weight: normal; }
+
+.hint {
+    position: absolute;
+    bottom: 20px;
+    font-size: 0.8rem;
+    color: #ccc;
+}
+
+.topic-tag {
+    position: absolute;
+    bottom: 20px;
+    background: #eee;
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    color: #555;
+}
+
+/* Controls */
+.controls {
+    margin-top: 30px;
+    display: flex;
+    gap: 15px;
+    width: 100%;
+    max-width: 350px;
+}
+
+.btn {
+    flex: 1;
+    padding: 15px;
+    border: none;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.1s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.btn:active { transform: scale(0.95); }
+.btn-red { background-color: #ffeaea; color: #d63031; border: 1px solid #fab1a0; }
+.btn-green { background-color: #e6ffea; color: #00b894; border: 1px solid #55efc4; }
+.btn-gray { background-color: #f1f2f6; color: #747d8c; }
+
+.instructions {
+    margin-top: 20px;
+    font-size: 0.8rem;
+    color: #999;
+    text-align: center;
+}
+
+/* Swipe Overlays */
+.overlay {
+    position: absolute;
+    top: 40px;
+    padding: 10px 20px;
+    border: 3px solid;
+    border-radius: 8px;
+    font-size: 2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.overlay-known {
+    left: 40px;
+    color: #00b894;
+    border-color: #00b894;
+    transform: rotate(-15deg);
+}
+
+.overlay-unknown {
+    right: 40px;
+    color: #d63031;
+    border-color: #d63031;
+    transform: rotate(15deg);
+}

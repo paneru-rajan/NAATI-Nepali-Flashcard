@@ -1,7 +1,9 @@
 [project]
 name = "naati-practice"
 version = "0.1.0"
-description = "Add your description here"
+description = "A lightweight flashcard app for NAATI CCL Nepali vocabulary practice."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "flask>=3.1.2",
+]
