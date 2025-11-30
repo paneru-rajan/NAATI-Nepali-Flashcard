@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const cardElement = document.getElementById('card');
+    // Select static elements that don't change
     const overlayKnown = document.querySelector('.overlay-known');
     const overlayUnknown = document.querySelector('.overlay-unknown');
     
@@ -11,13 +11,38 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchNextCard();
     updateStats();
 
+    // --- Event Delegation for Card Interactions ---
+    // We attach listeners to 'document' to handle cases where #card is replaced in the DOM
+
+    // 1. Card Click (Flip)
+    document.addEventListener('click', (e) => {
+        const card = e.target.closest('#card');
+        if (card && !isDragging && !hasMoved) {
+            flipCard();
+        }
+    });
+
+    // 2. Drag Start (Touch/Mouse)
+    document.addEventListener('touchstart', (e) => {
+        if (e.target.closest('#card')) dragStart(e);
+    });
+    document.addEventListener('mousedown', (e) => {
+        if (e.target.closest('#card')) dragStart(e);
+    });
+
+    // 3. Drag Move & End (Always on document)
+    document.addEventListener('touchmove', dragMove);
+    document.addEventListener('mousemove', dragMove);
+    document.addEventListener('touchend', dragEnd);
+    document.addEventListener('mouseup', dragEnd);
+
+
     // --- Inputs & Controls ---
     const btnFlip = document.getElementById('btn-flip');
     if (btnFlip) {
         btnFlip.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent any parent handlers
+            e.stopPropagation(); 
             flipCard();
-            // Remove focus so spacebar doesn't trigger it again
             btnFlip.blur(); 
         });
     }
@@ -25,12 +50,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-known').addEventListener('click', () => handleChoice('known'));
     document.getElementById('btn-unknown').addEventListener('click', () => handleChoice('unknown'));
     
-    // Removed duplicate listener that was here
-
     document.addEventListener('keydown', (e) => {
         if (isFinished) return;
         if (e.code === 'Space') {
-            e.preventDefault(); // Prevent scrolling
+            e.preventDefault(); 
             flipCard();
         }
         if (e.code === 'ArrowRight') handleChoice('known');
@@ -43,33 +66,22 @@ document.addEventListener('DOMContentLoaded', () => {
     let isDragging = false;
     let hasMoved = false;
 
-    cardElement.addEventListener('touchstart', dragStart);
-    cardElement.addEventListener('mousedown', dragStart);
-
-    cardElement.addEventListener('touchmove', dragMove);
-    document.addEventListener('mousemove', dragMove);
-
-    cardElement.addEventListener('touchend', dragEnd);
-    document.addEventListener('mouseup', dragEnd);
-    
-    // Fix: Only flip if we haven't dragged significantly
-    cardElement.addEventListener('click', (e) => {
-        if (!isDragging && !hasMoved) flipCard();
-    });
-
     function dragStart(e) {
         if (isFinished) return;
+        const cardElement = document.getElementById('card');
+        if (!cardElement) return;
+
         startX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
         isDragging = true;
-        hasMoved = false; // Reset movement flag
+        hasMoved = false; 
         cardElement.style.transition = 'none';
     }
 
     function dragMove(e) {
         if (!isDragging) return;
-        // Don't prevent default immediately if using touch-action in CSS, 
-        // but here we want to be sure.
-        // e.preventDefault(); 
+        
+        const cardElement = document.getElementById('card');
+        if (!cardElement) return;
 
         currentX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
         const deltaX = currentX - startX;
@@ -96,47 +108,68 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isDragging) return;
         isDragging = false;
         
+        const cardElement = document.getElementById('card');
+        if (!cardElement) return;
+        
         const deltaX = currentX - startX;
         const threshold = 100;
 
         cardElement.style.transition = 'transform 0.4s ease';
 
-        if (deltaX > threshold) {
+        // Only treat as a swipe if we actually moved significantly
+        if (hasMoved && deltaX > threshold) {
             animateOut(500);
             setTimeout(() => handleChoice('known', true), 200);
-        } else if (deltaX < -threshold) {
+        } else if (hasMoved && deltaX < -threshold) {
             animateOut(-500);
             setTimeout(() => handleChoice('unknown', true), 200);
         } else {
+            // If it was just a small jitter or tap, or not far enough, reset
             resetCardVisuals();
         }
-        // Note: hasMoved stays true here if they moved, preventing the 'click' event from flipping
+        
+        // We need to keep 'hasMoved' true briefly so the 'click' handler knows
+        // not to flip immediately if it was a drag, but we reset it soon after.
         setTimeout(() => { hasMoved = false; }, 100); 
     }
 
     // --- Core Functions ---
 
     function animateOut(moveX) {
+        const cardElement = document.getElementById('card');
+        if (!cardElement) return;
         cardElement.style.transform = `translateX(${moveX}px) rotate(${moveX * 0.1}deg)`;
         overlayKnown.style.opacity = 0;
         overlayUnknown.style.opacity = 0;
     }
 
     function resetCardVisuals() {
-        const isFlipped = cardElement.classList.contains('is-flipped');
-        cardElement.style.transform = isFlipped ? 'rotateY(180deg)' : '';
+        const cardElement = document.getElementById('card');
+        if (!cardElement) return;
+        
+        // Simply clearing the inline transform lets the CSS class (is-flipped) take over.
+        // This ensures we don't get stuck with an inline 'rotateY(180deg)' that blocks future toggles.
+        cardElement.style.transform = '';
+        
         overlayKnown.style.opacity = 0;
         overlayUnknown.style.opacity = 0;
     }
 
     function flipCard() {
-        cardElement.classList.toggle('is-flipped');
+        const cardElement = document.getElementById('card');
+        if (cardElement) {
+            // Clear inline style so CSS class can dictate the transform
+            cardElement.style.transform = '';
+            cardElement.classList.toggle('is-flipped');
+        }
     }
 
     function handleChoice(status, skipAnimation = false) {
         if (isFinished || !currentCardData) return;
 
-        if (!skipAnimation) {
+        const cardElement = document.getElementById('card');
+
+        if (!skipAnimation && cardElement) {
             const moveX = status === 'known' ? 500 : -500;
             animateOut(moveX);
         }
@@ -151,17 +184,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         setTimeout(() => {
-            // UX Fix: Clear content while loading to prevent "flash of old content"
+            // UX Fix: Clear content while loading
             document.getElementById('front-main').textContent = '...';
             document.getElementById('front-sub').textContent = '';
             document.getElementById('back-main').textContent = '...';
             document.getElementById('back-sub').textContent = '';
 
-            cardElement.style.transition = 'none';
-            cardElement.classList.remove('is-flipped');
-            cardElement.style.transform = 'translate(0px, 0px)';
-            void cardElement.offsetWidth;
-            cardElement.style.transition = 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            if (cardElement) {
+                cardElement.style.transition = 'none';
+                cardElement.classList.remove('is-flipped');
+                cardElement.style.transform = ''; // Clear inline transform
+                void cardElement.offsetWidth; // Force reflow
+                cardElement.style.transition = 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            }
             
             fetchNextCard();
             updateStats();
@@ -222,7 +257,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const mastered = data.known;
                 const percent = total === 0 ? 0 : Math.round((mastered / total) * 100);
                 
-                // Updated Format: 2 Mastered / 9 To Review / XX Total
                 document.getElementById('progress-text').textContent = 
                     `${mastered} Mastered / ${data.unknown} To Review / ${total} Total`;
                 
