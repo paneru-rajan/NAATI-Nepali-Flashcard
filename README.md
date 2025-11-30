@@ -54,6 +54,8 @@ Open your browser and navigate to:
     * `Left Arrow`: Mark as Unknown (Review later)
     * `Right Arrow`: Mark as Known
 
+![web.png](static/web.png)
+
 ### 📱 On Mobile Phone (Same WiFi)
 
 1. Find your computer's local IP address:
@@ -64,6 +66,8 @@ Open your browser and navigate to:
 2. On your phone, visit: `http://YOUR_COMPUTER_IP:8000`
 
 3. **Controls:** Swipe Left (Unknown) or Swipe Right (Known).
+
+![mobile.png](static/mobile.png)
 
 ## Project Structure
 

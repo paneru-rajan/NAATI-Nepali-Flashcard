@@ -12,8 +12,19 @@
 <body>
 
     <div class="header">
-        <div class="stats">
-            <span id="progress-text">Loading...</span>
+        <div class="stats-container">
+            <div class="stat-item">
+                <span class="stat-number" id="stat-known">-</span>
+                <span class="stat-label">Mastered</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="stat-unknown">-</span>
+                <span class="stat-label">Review</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="stat-total">-</span>
+                <span class="stat-label">Total</span>
+            </div>
         </div>
         <div>
             <a href="/list" class="logout-btn" style="margin-right: 15px;">List View</a>

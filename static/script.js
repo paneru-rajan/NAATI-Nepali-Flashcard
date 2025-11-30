@@ -257,8 +257,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const mastered = data.known;
                 const percent = total === 0 ? 0 : Math.round((mastered / total) * 100);
                 
-                document.getElementById('progress-text').textContent = 
-                    `${mastered} Mastered / ${data.unknown} To Review / ${total} Total`;
+                document.getElementById('stat-known').textContent = mastered;
+                document.getElementById('stat-unknown').textContent = data.unknown;
+                document.getElementById('stat-total').textContent = total;
                 
                 document.getElementById('progress-bar').style.width = `${percent}%`;
             });
