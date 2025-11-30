@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let startX = 0;
     let currentX = 0;
     let isDragging = false;
+    let hasMoved = false;
 
     cardElement.addEventListener('touchstart', dragStart);
     cardElement.addEventListener('mousedown', dragStart);
@@ -40,20 +41,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cardElement.addEventListener('touchend', dragEnd);
     document.addEventListener('mouseup', dragEnd);
+    
+    // Fix: Only flip if we haven't dragged significantly
+    cardElement.addEventListener('click', (e) => {
+        if (!isDragging && !hasMoved) flipCard();
+    });
 
     function dragStart(e) {
         if (isFinished) return;
         startX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
         isDragging = true;
+        hasMoved = false; // Reset movement flag
         cardElement.style.transition = 'none';
     }
 
     function dragMove(e) {
         if (!isDragging) return;
-        e.preventDefault(); 
+        // Don't prevent default immediately if using touch-action in CSS, 
+        // but here we want to be sure.
+        // e.preventDefault(); 
 
         currentX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
         const deltaX = currentX - startX;
+        
+        if (Math.abs(deltaX) > 5) hasMoved = true;
+
         const rotate = deltaX * 0.1;
         const isFlipped = cardElement.classList.contains('is-flipped');
         const flipRotate = isFlipped ? 'rotateY(180deg)' : '';
@@ -88,6 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             resetCardVisuals();
         }
+        // Note: hasMoved stays true here if they moved, preventing the 'click' event from flipping
+        setTimeout(() => { hasMoved = false; }, 100); 
     }
 
     // --- Core Functions ---
@@ -127,6 +141,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         setTimeout(() => {
+            // UX Fix: Clear content while loading to prevent "flash of old content"
+            document.getElementById('front-main').textContent = '...';
+            document.getElementById('front-sub').textContent = '';
+            document.getElementById('back-main').textContent = '...';
+            document.getElementById('back-sub').textContent = '';
+
             cardElement.style.transition = 'none';
             cardElement.classList.remove('is-flipped');
             cardElement.style.transform = 'translate(0px, 0px)';
@@ -150,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderCard(data);
             });
     }
-
+    
     function renderCard(data) {
         const frontLabel = document.getElementById('front-label');
         const frontMain = document.getElementById('front-main');
@@ -191,8 +211,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const total = data.total;
                 const mastered = data.known;
                 const percent = total === 0 ? 0 : Math.round((mastered / total) * 100);
+                
+                // Updated Format: 2 Mastered / 9 To Review / XX Total
                 document.getElementById('progress-text').textContent = 
-                    `${mastered} Mastered / ${data.unknown} To Review`;
+                    `${mastered} Mastered / ${data.unknown} To Review / ${total} Total`;
+                
                 document.getElementById('progress-bar').style.width = `${percent}%`;
             });
     }

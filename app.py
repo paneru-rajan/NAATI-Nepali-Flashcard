@@ -48,23 +48,24 @@ def init_db():
         )
     ''')
 
-    cursor.execute('SELECT count(*) FROM vocabulary')
-    if cursor.fetchone()[0] == 0:
-        print("Initializing Database with CSV data...")
-        if os.path.exists(CSV_FILE):
-            with open(CSV_FILE, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f)
-                to_db = []
-                for row in reader:
-                    to_db.append((
-                        row['ID'],
-                        row['English'],
-                        row['Nepali (Romanized)'],
-                        row['Nepali (Devanagari)']
-                    ))
-                cursor.executemany("INSERT INTO vocabulary (id, english, nepali_roman, nepali_dev) VALUES (?, ?, ?, ?)",
-                                   to_db)
-                print(f"Imported {len(to_db)} words.")
+    # Always check for new words in CSV
+    if os.path.exists(CSV_FILE):
+        print("Checking CSV for new words...")
+        with open(CSV_FILE, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            to_db = []
+            for row in reader:
+                to_db.append((
+                    row['ID'],
+                    row['English'],
+                    row['Nepali (Romanized)'],
+                    row['Nepali (Devanagari)']
+                ))
+            # INSERT OR IGNORE will add new IDs and skip existing ones
+            cursor.executemany("INSERT OR IGNORE INTO vocabulary (id, english, nepali_roman, nepali_dev) VALUES (?, ?, ?, ?)",
+                               to_db)
+            print(f"Database updated. Total words in CSV: {len(to_db)}")
+            
     conn.commit()
     conn.close()
 
@@ -100,6 +101,29 @@ def flashcards():
     if 'username' not in session:
         return redirect(url_for('index'))
     return render_template('index.html', user=session['username'])
+
+
+@app.route('/list')
+def vocab_list():
+    if 'username' not in session:
+        return redirect(url_for('index'))
+    
+    username = session['username']
+    conn = get_db_connection()
+    query = '''
+        SELECT v.id, v.english, v.nepali_roman, v.nepali_dev, 
+               COALESCE(p.status, 'New') as status
+        FROM vocabulary v
+        LEFT JOIN progress p ON v.id = p.vocab_id AND p.username = ?
+        ORDER BY 
+            CASE WHEN p.status = 'unknown' THEN 1
+                 WHEN p.status IS NULL THEN 2
+                 ELSE 3 END,
+            v.id
+    '''
+    words = conn.execute(query, (username,)).fetchall()
+    conn.close()
+    return render_template('list.html', words=words, user=username)
 
 
 @app.route('/api/get_card')

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary List</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body { overflow: auto; height: auto; } /* Override app style */
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .nav { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+        .btn-back { text-decoration: none; background: #007bff; color: white; padding: 8px 16px; border-radius: 6px; }
+        
+        .filters { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .filter-btn { padding: 6px 12px; border: 1px solid #ccc; border-radius: 20px; background: white; cursor: pointer; font-size: 0.9rem; }
+        .filter-btn.active { background: #333; color: white; border-color: #333; }
+
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; font-weight: 600; color: #555; }
+        
+        .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
+        .status-known { background: #e6ffea; color: #00b894; }
+        .status-unknown { background: #ffeaea; color: #d63031; }
+        .status-new { background: #f1f2f6; color: #747d8c; }
+
+        @media (max-width: 600px) {
+            th, td { font-size: 0.9rem; padding: 8px; }
+            .nepali-col { display: none; } /* Hide Roman Nepali on small screens to save space if needed, but let's keep it for now */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <h2>Vocabulary List ({{ words|length }})</h2>
+            <a href="/app" class="btn-back">← Back to Cards</a>
+        </div>
+
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="status-unknown">Review</button>
+            <button class="filter-btn" data-filter="status-known">Mastered</button>
+            <button class="filter-btn" data-filter="status-new">New</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>English</th>
+                    <th>Nepali</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for word in words %}
+                <tr class="vocab-row" data-status="status-{{ word.status|lower }}">
+                    <td>{{ word.id }}</td>
+                    <td>{{ word.english }}</td>
+                    <td>
+                        <div>{{ word.nepali_dev }}</div>
+                        <div style="font-size: 0.8em; color: #777;">{{ word.nepali_roman }}</div>
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ word.status|lower }}">
+                            {{ word.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active button
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const filter = btn.getAttribute('data-filter');
+                const rows = document.querySelectorAll('.vocab-row');
+
+                rows.forEach(row => {
+                    if (filter === 'all' || row.getAttribute('data-status') === filter) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
