@@ -147,8 +147,8 @@ def get_card():
 
     card = None
     
-    # Strategy: Mix Review (30%) and New (70%)
-    want_review = (random.random() < 0.3)
+    # Strategy: Mix Review (15%) and New (85%)
+    want_review = (random.random() < 0.15)
     
     # Prioritize review if that's what we want and we have them, OR if we have no new words
     if (want_review and count_review > 0) or (count_new == 0 and count_review > 0):
